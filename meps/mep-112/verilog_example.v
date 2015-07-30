@@ -30,7 +30,7 @@ module mdarray_access
   // 128*128*128*256 = 536Mbits
   localparam N  = 4*4*4;
   reg [7:0] mem [N-1:0];
-  int         addr;
+  integer   addr;
   always @(posedge clock) begin
     addr = slc*row*col;
     if (wr == 1'b1) begin
