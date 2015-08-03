@@ -29,8 +29,11 @@ import hdlutils
 def nDmatrix( Clk, Reset, A0, A1, D , Wr1, Wr2 , Q , ShiftLeft, ShiftUp):
     ''' a small example to test the nD experimental implementation '''
 
-    matrix = myhdl.Array( (3, 3), myhdl.Signal(myhdl.intbv(0)[len(D):]))
-    vector = myhdl.Array( (3,), myhdl.Signal(myhdl.intbv(0)[len(D):]))
+#     matrix = myhdl.Array( (3, 3), myhdl.Signal(myhdl.intbv(0)[len(D):]))
+#     vector = myhdl.Array( (3,), myhdl.Signal(myhdl.intbv(0)[len(D):]))
+#     matrix = myhdl.Array( (3, 3), myhdl.intbv(0)[len(D):])
+    matrix = myhdl.Array( [[ k*3 + j + 1 for j in range(3)] for k in range(3)], myhdl.intbv()[len(D):] )
+    vector = myhdl.Array( (3,), myhdl.intbv()[len(D):])
     
     @myhdl.always_seq( Clk.posedge, reset = Reset)
     def fill():
@@ -54,10 +57,9 @@ def nDmatrix( Clk, Reset, A0, A1, D , Wr1, Wr2 , Q , ShiftLeft, ShiftUp):
     @myhdl.always_comb
     def calc():
         matrixsum = myhdl.intbv(0)[len(Q):]
-        for l in range(3):
-            for k in range(3):
-                for j in range(3):
-                    matrixsum += matrix[l][k][j]
+        for k in range(3):
+            for j in range(3):
+                matrixsum += matrix[l][k][j]
         Q.next = matrixsum
                 
     return fill, calc
