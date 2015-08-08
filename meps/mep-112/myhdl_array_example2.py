@@ -11,6 +11,7 @@ import random
 
 import myhdl
 
+
 import hdlutils
 
 
@@ -26,7 +27,7 @@ import hdlutils
 #     return shift
 #     
 
-def nDmatrix( Clk, Reset, A0, A1, D , Wr1, Wr2 , Q , ShiftLeft, ShiftUp):
+def nDmatrix( Clk, Reset, A0, A1, D , Wr1, Wr2 , Q , ShiftLeft, ShiftUp, Mark):
     ''' a small example to test the nD experimental implementation '''
 
 #     matrix = myhdl.Array( (3, 3), myhdl.Signal(myhdl.intbv(0)[len(D):]))
@@ -37,29 +38,42 @@ def nDmatrix( Clk, Reset, A0, A1, D , Wr1, Wr2 , Q , ShiftLeft, ShiftUp):
     
     @myhdl.always_seq( Clk.posedge, reset = Reset)
     def fill():
-            for k in range(3):
+            if Wr1:
+                for k in range(3):
+                    for j in range(3):
+                        if A1 == k and A0 == j :
+                            matrix[k][j].next = D
+            elif Wr2:               
                 for j in range(3):
-                    if A1 == k and A0 == j and Wr1:
-                        matrix[k][j].next = D
-            for j in range(3):
-                if A0 == j and Wr2:
-                    vector[j].next = D
-            if ShiftLeft:
+                    if A0 == j :
+                        vector[j].next = D
+                           
+            elif ShiftLeft:
                 for k in range(3):
                     for j in range(2):
                         matrix[k][j].next = matrix[k][j+1]
+                    matrix[k][:2].next = matrix[k][1:]
                     matrix[k][2].next = vector[k]
+                       
             elif ShiftUp:
                 for k in range(2):
                     matrix[k+1].next = matrix[k]
                 matrix[0] =  vector
+                  
+            elif Mark:
+                for k in range(3):
+                    matrix[k][0][7].next = D[0] and D[1]
+                    matrix[k][2][8:6].next = D[5:3]
+                    matrix[k][1].next = vector[k][5:3]
+#                 Q.next = matrix[0][0][4:1]
 
     @myhdl.always_comb
     def calc():
         matrixsum = myhdl.intbv(0)[len(Q):]
         for k in range(3):
             for j in range(3):
-                matrixsum += matrix[l][k][j]
+#                 matrixsum = matrixsum + matrix[k][j]
+                matrixsum += matrix[k][j]
         Q.next = matrixsum
                 
     return fill, calc
@@ -76,9 +90,10 @@ def tb_nDmatrix():
     Wr2 = myhdl.Signal( bool( 0 ) )
     ShiftLeft = myhdl.Signal( bool( 0 ) )
     ShiftUp = myhdl.Signal( bool( 0 ) )
+    Mark = myhdl.Signal( bool( 0 ) )
     Q = myhdl.Signal( myhdl.intbv( 0 )[WIDTH_D + 4:] )
     
-    dut = nDmatrix(Clk, Reset, A0, A1, D , Wr1, Wr2 , Q , ShiftLeft, ShiftUp)
+    dut = nDmatrix(Clk, Reset, A0, A1, D , Wr1, Wr2 , Q , ShiftLeft, ShiftUp, Mark)
     
     random.seed("We want repeatable randomness")
     td = [ random.randint(1, 2**WIDTH_D) for _ in range(3**3)]
@@ -124,10 +139,11 @@ def convert():
     Wr2 = myhdl.Signal( bool( 0 ) )
     ShiftLeft = myhdl.Signal( bool( 0 ) )
     ShiftUp = myhdl.Signal( bool( 0 ) )
+    Mark = myhdl.Signal( bool( 0 ) )
     Q = myhdl.Signal( myhdl.intbv( 0 )[WIDTH_D + 4:] )
     
-    myhdl.toVHDL( nDmatrix, Clk, Reset, A0, A1, D , Wr1, Wr2 , Q, ShiftLeft, ShiftUp)
-    myhdl.toVerilog( nDmatrix, Clk, Reset, A0, A1, D , Wr1, Wr2 , Q, ShiftLeft, ShiftUp)
+    myhdl.toVHDL( nDmatrix, Clk, Reset, A0, A1, D , Wr1, Wr2 , Q, ShiftLeft, ShiftUp, Mark)
+    myhdl.toVerilog( nDmatrix, Clk, Reset, A0, A1, D , Wr1, Wr2 , Q, ShiftLeft, ShiftUp, Mark)
 
 
 if __name__ == '__main__':

@@ -18,7 +18,7 @@ import hdlutils
 def nDcube( Clk, Reset, A0, A1, A2, D , Wr , Q):
     ''' a small example to test the nD experimental implementation '''
 
-    cube = myhdl.Array( (3, 3, 3), myhdl.Signal(myhdl.intbv(0)[len(D):]))
+    cube = myhdl.Array( (3, 3, 3), myhdl.intbv(0)[len(D):])
     
     @myhdl.always_seq( Clk.posedge, reset = Reset)
     def fill():
