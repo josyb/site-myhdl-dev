@@ -33,8 +33,8 @@ def nDmatrix( Clk, Reset, A0, A1, D , Wr1, Wr2 , Q , ShiftLeft, ShiftUp, Mark):
 #     matrix = myhdl.Array( (3, 3), myhdl.Signal(myhdl.intbv(0)[len(D):]))
 #     vector = myhdl.Array( (3,), myhdl.Signal(myhdl.intbv(0)[len(D):]))
 #     matrix = myhdl.Array( (3, 3), myhdl.intbv(0)[len(D):])
-    matrix = myhdl.Array( [[ k*3 + j + 1 for j in range(3)] for k in range(3)], myhdl.intbv()[len(D):] )
-    vector = myhdl.Array( (3,), myhdl.intbv()[len(D):])
+    matrix = myhdl.Array( [[ k*3 + j + 1 for j in range(3)] for k in range(3)], myhdl.Signal( myhdl.intbv()[len(D):]) )
+    vector = myhdl.Array( (3,), myhdl.Signal( myhdl.intbv()[len(D):]) )
     
     @myhdl.always_seq( Clk.posedge, reset = Reset)
     def fill():
@@ -50,31 +50,37 @@ def nDmatrix( Clk, Reset, A0, A1, D , Wr1, Wr2 , Q , ShiftLeft, ShiftUp, Mark):
                            
             elif ShiftLeft:
                 for k in range(3):
-                    for j in range(2):
-                        matrix[k][j].next = matrix[k][j+1]
-                    matrix[k][:2].next = matrix[k][1:]
+                    matrix[k][0:2].next = matrix[k][1:]
+#                     for j in range(2):
+#                         matrix[k][j].next = matrix[k][j+1]
                     matrix[k][2].next = vector[k]
                        
             elif ShiftUp:
                 for k in range(2):
                     matrix[k+1].next = matrix[k]
-                matrix[0] =  vector
-                  
+#                     for j in range(3):
+#                         matrix[k+1][j].next = matrix[k][j]
+                matrix[0].next =  vector
+#                 for j in range(3):
+#                     matrix[0][j].next =  vector[j]
+#                   
             elif Mark:
                 for k in range(3):
-                    matrix[k][0][7].next = D[0] and D[1]
-                    matrix[k][2][8:6].next = D[5:3]
-                    matrix[k][1].next = vector[k][5:3]
-#                 Q.next = matrix[0][0][4:1]
+                    matrix[k][0].next[6] = 1
+                    matrix[k][0].next[7] = D[0] and D[1]
+                    matrix[k][2].next[7:5] = D[5:3]
+                    matrix[k][1].next = vector[k][7:1]
+# #                 Q.next = matrix[0][0][4:1]
 
     @myhdl.always_comb
     def calc():
-        matrixsum = myhdl.intbv(0)[len(Q):]
-        for k in range(3):
-            for j in range(3):
-#                 matrixsum = matrixsum + matrix[k][j]
-                matrixsum += matrix[k][j]
-        Q.next = matrixsum
+#         matrixsum = myhdl.intbv(0)[len(Q):]
+#         for k in range(3):
+#             for j in range(3):
+# #                 matrixsum = matrixsum + matrix[k][j]
+#                 matrixsum += matrix[k][j]
+#         Q.next = matrixsum
+        Q.next = matrix[A1][A0]
                 
     return fill, calc
 
@@ -96,7 +102,8 @@ def tb_nDmatrix():
     dut = nDmatrix(Clk, Reset, A0, A1, D , Wr1, Wr2 , Q , ShiftLeft, ShiftUp, Mark)
     
     random.seed("We want repeatable randomness")
-    td = [ random.randint(1, 2**WIDTH_D) for _ in range(3**3)]
+#     td = [ random.randint(1, 2**WIDTH_D) for _ in range(3**3)]
+    td = [ (i+1)*10 for i in range(3**3)]
     
     ClkCount = myhdl.Signal(myhdl.intbv(0)[32:])
     tCK = 20
@@ -123,6 +130,32 @@ def tb_nDmatrix():
                 idx += 1
         
         yield hdlutils.delayclks(Clk, tCK, 5)
+
+        for j in range(3):
+            A0.next = j
+            D.next = j + 1
+            yield hdlutils.pulsesig(Clk, tCK, Wr2, 1, 1)
+
+        yield hdlutils.delayclks(Clk, tCK, 5)
+        D.next = 0x55
+        print( 'Shifting Left')
+        yield hdlutils.pulsesig(Clk, tCK, ShiftLeft, 1, 1)
+        
+#         # report
+#         for k in range(3):
+#             A1.next = k
+#             for j in range(3):
+#                 A0.next = j       
+#                 yield hdlutils.delayclks(Clk, tCK, 1)
+
+        yield hdlutils.delayclks(Clk, tCK, 5)
+        yield hdlutils.pulsesig(Clk, tCK, ShiftUp, 1, 1)
+
+        yield hdlutils.delayclks(Clk, tCK, 5)
+        yield hdlutils.pulsesig(Clk, tCK, Mark, 1, 1)
+
+        yield hdlutils.delayclks(Clk, tCK, 5)
+                
         raise myhdl.StopSimulation
     
     return dut, clkgen, resetgen, stimulus
