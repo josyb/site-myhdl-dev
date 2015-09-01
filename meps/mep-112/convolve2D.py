@@ -149,7 +149,7 @@ if __name__ == '__main__':
         def SC_convolve2D( Clk, Reset, D, AY, AX, Wr, Q):
             ''' one SIgnal Matrix and a COnstant Matrix '''
             dataa  = myhdl.Array( (3,3), myhdl.Signal( myhdl.intbv(0)[8:]))
-            SobelH = myhdl.Array( [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]],  myhdl.intbv(0, min= -3, max = 3))
+            SobelH = myhdl.Array( [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]],  myhdl.intbv(0, min= -2, max = 3))
             
             w = matrixwriter(Clk, Reset, D, AY, AX, Wr, dataa)            
             conv = convolve2D(Clk, dataa, SobelH, Q )
